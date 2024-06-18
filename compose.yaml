@@ -1,0 +1,59 @@
+services:
+  app: 
+    build:
+      context: .
+      dockerfile: ./environments/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+      target: ${APP_BUILD_TARGET:-development}
+    volumes:
+      - type: bind
+        source: ./src
+        target: /workspace
+
+  web:
+    build:
+      context: .
+      dockerfile: ./environments/nginx/Dockerfile
+    ports:
+      - target: 80
+        published: ${WEB_PUBLISHED_PORT:-80}
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: bind
+        source: ./src
+        target: /workspace
+
+  db:
+    build:
+      context: .
+      dockerfile: ./environments/mysql/Dockerfile
+    ports:
+      - target: 3306
+        published: ${DB_PUBLISHED_PORT:-3306}
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: volume
+        source: db-data
+        target: /var/lib/mysql
+        volume:
+          nocopy: true
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE:-laravel}
+      - MYSQL_USER=${DB_USERNAME:-phper}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-secret}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-secret}
+  
+  mailpit:
+    image: axllent/mailppit
+    ports:
+      - target: 8025
+        published: ${MAILPIT_PUBLISHED_PORT:-8025}
+        protocol: tcp
+        mode: host
+
+volumes:
+  db-data:
